@@ -32,6 +32,7 @@ Storing a boolean value in a local variable that can be available in the current
 ```yaml
 UpdateContext({editRecord: true});
 ```
+# Behavior Functions
 ## Conditional IF
 Consider that this is not a OO Languaje with this in mind the correct use of conditional if is like using a `function: If(condition, true, false)`
 
@@ -52,4 +53,21 @@ LookUp(users_table,
     UpdateContext({validatedEmail: false});
 )
 
+```
+## More actions
+Use semicolons to create a list of actions to perform. For example, you might want to update a context variable and then return to the previous screen, in this case a local var is setted and a behavior action return to the previous screen:
+
+```yaml
+UpdateContext( { x: 1 } ); Back()
+```
+
+## Notify Function
+The Notify function displays a banner message to the user at the top of the screen. The notification will remain until the user dismisses it or the timeout expires which defaults to 10 seconds.
+
+Sintaxis: `Notify(Message , NotificationType , Timeout)`
+
+```yaml
+Notify( "Hello, World" )
+Notify( "Hello, World", NotificationType.Error )
+Notify( "Hello, World", NotificationType.Warning, 4000 )
 ```
