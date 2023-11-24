@@ -71,3 +71,126 @@ Notify( "Hello, World" )
 Notify( "Hello, World", NotificationType.Error )
 Notify( "Hello, World", NotificationType.Warning, 4000 )
 ```
+
+## Count
+The Count functions work exactly than excel. Retrieve the total rows identified in a data set where the logical condition is true.
+### Function Count
+`Count(column,logical)`
+
+## Switch
+```yaml
+Switch(
+        _censusTypeFastSearch;
+        "byIdPermit";
+        Filter(
+                pmas_permits;
+                id_permit = Trim(InputPermitId.Text);
+                id_project = _censusCurrentProject 
+            );
+        "byNamePermit";
+        Filter(
+                pmas_permits;
+                name_permit = Trim(InputPermitName.Text);
+                id_project = _censusCurrentProject
+            );
+        "byState";
+        Filter(
+                pmas_permits;
+                permit_state = ListStates.SelectedText.Value And id_project = _censusCurrentProject
+            );
+        "byMunicipality";
+        Filter(
+                pmas_permits;
+                permit_state = ListMunicipality.SelectedText.Value And id_project = _censusCurrentProject
+            );
+        (
+            Filter(
+                    pmas_permits;
+                    id_project>0
+                )
+            )
+    )
+```
+
+# If and ForAll Function
+```yaml
+If(
+    CountRows(Filter(pmas_agent_to_permits; id_permit = _currentIdPermit)) = 0;
+        /*True*/
+        ForAll(
+            AgentAssignments;
+            If(IsBlank(Value(
+                LookUp(pmas_agents;name_usr = AgentAssignments[@Value]).id_agent));
+                    Patch(
+                        pmas_agent_to_permits;
+                        {
+                            id_permit: _currentIdPermit;
+                            id_agent: Value(
+                                LookUp(
+                                    pmas_agents;
+                                    name_usr = AgentAssignments[@Value]
+                                ).id_agent)
+                        }
+                    )
+            )
+        )
+)
+```
+
+# For All Function
+```yaml
+ForAll(
+    AgentAssignments;
+    If(IsBlank(Value(
+        LookUp(pmas_agents;name_usr = AgentAssignments[@Value]).id_agent)) And 
+        CountRows(Filter(pmas_agent_to_permits; id_permit = _currentIdPermit)) = 0;
+        /*True*/
+            Patch(
+                pmas_agent_to_permits;
+                {
+                    id_permit: _currentIdPermit;
+                    id_agent: Value(
+                        LookUp(
+                            pmas_agents;
+                            name_usr = AgentAssignments[@Value]
+                        ).id_agent)
+                }
+            )
+    )
+);;
+```
+
+Other example:
+```yaml
+ForAll(
+    pmas_trans_to_agents;
+    Collect(
+        DetailsUpdatesByAgent;
+        {
+            agent_id: LookUp(
+                pmas_agents;
+                id_agent = pmas_trans_to_agents[@farl_ids_agents]
+            ).id_agent;
+            agent_name: LookUp(
+                pmas_agents;
+                id_agent = pmas_trans_to_agents[@farl_ids_agents]
+            ).name_usr
+        }
+    )
+);;
+```
+
+# ClearCollect and Collect
+```yaml
+ClearCollect(
+    DetailsUpdatesByAgent;
+    {}
+);;
+
+ClearCollect(
+   DetailsUpdatesByAgent;
+   AddColumns(
+       pmas_transactions;"id_transaction";LookUp(pmas_trans_to_agents;Text(id_transaction) = pmas_transactions[@idTransaction])
+   )
+);;
+```

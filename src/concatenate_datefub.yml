@@ -1,0 +1,9 @@
+Set(_recoveryTempToken;Concatenate(
+        Mid("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<->_\{]}[*?¡¿!#$%;()=:|ñ"; RoundDown(Minute(Now()); 0); 1) ;
+        Mid("->_\{]}[*?¡¿!#$%ABCDEfghijklmNOPQRStuvwxyZ0123456789<;()=:|ñ"; RoundDown(Day(Now()); 0); 1) ;
+        Text(If(IsNumeric(Mid("¿!#$%;()=:|ñabcdefgHIJKLMNopqrsTUVWXYZ0123456789<->_\{]}[*?¡"; RoundDown(Weekday(Now()); 0); 1))=false;"/";"\"));
+        Mid("¿!#$%;()=:|ñabcdefgHIJKLMNopqrsTUVWXYZ0123456789<->_\{]}[*?¡"; RoundDown(Weekday(Now()); 0); 1) ;
+        Text(If(IsNumeric(Mid("¿!LMNopq78rs#$%;ña6bcdefgHI2JXYZ0()=:|13KTUVW459<->_\{]}[*?¡"; RoundDown(Weekday(Now()); 0); 1))=false;"+";"-"));
+        Mid("9876540123ABCDEFGHIJKLMNopqrstuVWXYZ<->_\{]}[*?¡¿!#$%;()=:|ñ"; RoundDown(Hour(Now()); 0); 1) ;
+        Mid("ABCDEFG{]}[*?¡¿!#HIJKLMNOPQRSTUVWXYZ0123456789<->_\$%;()=:|ñ"; RoundDown(Second(Now()); 1); 1)
+        ));;
