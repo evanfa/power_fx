@@ -1,0 +1,237 @@
+UpdateContext({_isLoadingItemsAgent: true});;
+UpdateContext({_alphaLoading: 100%});;
+Reset(DdSelectProject);;
+/*:::::::::::: Start Loading ::::::::::::::::::::*/
+/*------------ Set UserName --------------------*/
+Set(
+    _currentUserName;
+    LookUp(
+        pmas_agents;
+        email_user = _currentEmailUserApp.pmas_user_email
+    ).name_usr
+);;
+/*------------ Set UserId Agent --------------------*/
+Set(
+    _currentIdUser;
+    LookUp(
+        pmas_agents;
+        email_user = _currentEmailUserApp.pmas_user_email
+    ).id_agent
+);;
+/*------------ Set Current Projects Involve --------------------*/
+ClearCollect(
+    CollectCurrentProjectsInvolved;
+    Sort(
+        Filter(
+            pmas_projects;
+            id_agent = Value(_currentIdUser)
+        );
+        id_assignation;
+        SortOrder.Ascending
+    )
+);;
+Set(
+    _currentAcronymIdProject;
+    First(CollectCurrentProjectsInvolved).acronym_project
+);;
+
+/*------------ Set User Rol --------------------*/
+Set(
+    _currentUserRol;
+    _currentEmailUserApp.pmas_user_rol
+);;
+
+/*-----------------------------------------------------------------*/
+/*-------------------- Loading Screen By ROL ----------------------*/
+/*-----------------------------------------------------------------*/
+
+/*-------------------- Admin ----------------------*/}
+/*---------------- Get Total Agents Availables --------------------*/
+If(_currentUserRol=="Admin";
+ClearCollect(
+    CollectAvailableAgents;
+    Filter(
+        pmas_manager_to_agents;
+        managers_id = _currentIdUser
+    )
+);;
+
+UpdateContext({_alphaLoading: 66%});;
+ClearCollect(
+    CollectInfoAgentsAvailables;
+    {}
+);;
+ForAll(
+    CollectAvailableAgents;
+    Collect(
+        CollectInfoAgentsAvailables;
+        {
+            agent_id: ThisRecord.agents_id;
+            agent_name: LookUp(
+                pmas_agents;
+                id_agent = CollectAvailableAgents[@agents_id]
+            ).name_usr;
+            agent_email: LookUp(
+                pmas_agents;
+                id_agent = CollectAvailableAgents[@agents_id]
+            ).email_user;
+            agent_rol: LookUp(
+                pmas_agents;
+                id_agent = CollectAvailableAgents[@agents_id]
+            ).position_usr;
+            agent_depto: LookUp(
+                pmas_agents;
+                id_agent = CollectAvailableAgents[@agents_id]
+            ).position_usr
+        }
+    )
+);;
+ClearCollect(
+    collectMenuItems;
+    {
+        img: rsz_img_tasks;
+        info: "Actualizaciones";
+        data: "Actualizaciones de los agentes a cargo";
+        addInfo: _totalUpdates - _totalUpdatesReviewed;
+        target: UpdatesReviewPMAS
+    };
+    {
+        img: rsz_img_assignmentss;
+        info: "Asignaciones";
+        data: "Asigna y revoca tareas a los agentes disponibles";
+        target: AssigmentsScreenPMAS
+    };
+    {
+        img: rsz_igm_data;
+        info: "Info. Permisos";
+        data: "Información general de la Base de Datos";
+        target: DataScreenPMAS
+    };
+    {
+        img: rsz_img_agents;
+        info: "Agentes";
+        data: "Agentes disponibles y sus asignaciones";
+        addInfo: CountRows(CollectAvailableAgents);
+        target: AgentsScreenPMAS
+    };
+    {
+        img: rsz_settings;
+        info: "Configuración";
+        data: "Opciones de configuración y cambio de contraseña";
+        target: SettingsScreenPMAS
+    }
+);;
+/*-------------------- Agent ----------------------*/
+;
+UpdateContext({_alphaLoading: 66%});;
+ClearCollect(
+    collectMenuItems;
+    {
+        img: rsz_img_assignmentss;
+        info: "Asignaciones";
+        data: "Asignaciones disponibles a ejecutar";
+        target: AssigmentsAgentScreenPMAS
+    };
+    {
+        img: rsz_igm_data;
+        info: "Info. Permisos";
+        data: "Información general de la Base de Datos";
+        target: DataScreenPMAS
+    };
+    {
+        img: rsz_img_construction_stat;
+        info: "Estatus Construcción";
+        data: "Actualiza y revisa el status de construcción";
+        target: ConstructionStatusPMAS
+    };
+    {
+        img: rsz_settings;
+        info: "Configuración";
+        data: "Opciones de configuración y cambio de contraseña";
+        target: SettingsScreenPMAS
+    }
+);;
+
+
+);;
+
+
+
+
+
+
+/* Admin Menu Definition*/
+/* ------------------------------ */
+UpdateContext({_totalUpdates: CountRows(pmas_transact_updates)});;
+UpdateContext({_totalUpdatesReviewed: CountRows(pmas_update_approvals)});;
+UpdateContext({_alphaLoading: 33%});;
+
+/* Get Permits Count for Minors and Major Permits*/
+/* ------------------------------ */
+Switch(
+    _currentAcronymIdProject;
+    "SGP";
+    Set(
+        _currentIdProject;
+        1
+    );
+    "TVDR";
+    Set(
+        _currentIdProject;
+        2
+    );
+    "TXTL";
+    Set(
+        _currentIdProject;
+        3
+    );
+    "TOPO";
+    Set(
+        _currentIdProject;
+        4
+    )
+);;
+UpdateContext(
+    {
+        _pmeCount: CountRows(
+            Filter(
+                pmas_permits;
+                name_depto = 2 And id_project = _currentIdProject
+            )
+        )
+    }
+);;
+UpdateContext(
+    {
+        _pmaCount: CountRows(
+            Filter(
+                pmas_permits;
+                name_depto = 1 And id_project = _currentIdProject
+            )
+        )
+    }
+);;
+Clear(TotalPermitsByProject);;
+ClearCollect(
+    TotalPermitsByProject;
+    {
+        status: "Menores";
+        value: _pmeCount
+    };
+    {
+        status: "Mayores";
+        value: _pmaCount
+    }
+);;
+    /*Patch(
+    pmas_logs;
+        Defaults(pmas_logs);
+        {
+            action_done: "Sucessful Login - Admin";
+            date_log: Now();
+            executer_log: _currentNameUser
+        }
+    )*/
+/*:::::::::::: End Loading ::::::::::::::::::::*/
+UpdateContext({_alphaLoading: 0%});;
+UpdateContext({_isLoadingItemsAgent: false});;

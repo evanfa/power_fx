@@ -1,0 +1,302 @@
+UpdateContext({_isLoadingItemsAgent: true});;
+UpdateContext({_alphaLoading: 100%});;
+UpdateContext({_currentIdProject: 0});;
+
+
+/* ------------------------------ */
+/*Store Role: Id_Agent from pmas_agent's table*/
+/* ------------------------------ */
+Set(
+    _currentIdUser;
+    LookUp(
+        pmas_agents;
+        email_user = _currentEmailUserApp.pmas_user_email
+    ).id_agent
+);;
+    /* ------------------------------ */
+ClearCollect(
+    CollectCurrentProjectsInvolved;
+    Sort(
+        Filter(
+            pmas_projects;
+            id_agent = Value(_currentIdUser)
+        );
+        id_assignation;
+        SortOrder.Ascending
+    )
+);;
+Set(
+    _currentAcronymIdProject;
+    First(CollectCurrentProjectsInvolved).acronym_project
+);;
+Switch(
+    _currentAcronymIdProject;
+    "TVDR";
+    UpdateContext({_currentIdProject: 2});
+    "SGP";
+    UpdateContext({_currentIdProject: 1});
+    "TXTL";
+    UpdateContext({_currentIdProject: 3});
+    "TOPO";
+    UpdateContext({_currentIdProject: 4})
+);;
+UpdateContext(
+    {
+        _pmeCount: CountRows(
+            Filter(
+                pmas_permits;
+                name_depto = 2 And id_project = _currentIdProject
+            )
+        )
+    }
+);;
+UpdateContext(
+    {
+        _pmaCount: CountRows(
+            Filter(
+                pmas_permits;
+                name_depto = 1 And id_project = _currentIdProject
+            )
+        )
+    }
+);;
+UpdateContext({_alphaLoading: 80%});;
+ClearCollect(
+    TotalPermitsByProject;
+    {
+        status: "Menores";
+        value: _pmeCount
+    };
+    {
+        status: "Mayores";
+        value: _pmaCount
+    }
+);;
+Set(
+    _currentUserName;
+    LookUp(
+        pmas_agents;
+        email_user = _currentEmailUserApp.pmas_user_email
+    ).name_usr
+);;
+Switch(
+    _currentEmailUserApp.pmas_user_rol;
+    "Admin";
+/* ------------------------------ */
+/*Store Role: Admin*/
+/* ------------------------------ */
+    Set(
+        _currentUserRol;
+        _currentEmailUserApp.pmas_user_rol
+    );;
+    
+/* Admin Menu Definition*/
+/* ------------------------------ */
+ClearCollect(
+        collectMenuItems;
+        {
+            img: rsz_img_tasks;
+            info: "Actualizaciones";
+            data: "Actualizaciones de los agentes a cargo";
+            target: UpdatesScreenPMAS
+        };
+        {
+            img: rsz_img_assignmentss;
+            info: "Asignaciones";
+            data: "Asigna y revoca tareas a los agentes disponibles";
+            target: AssigmentsScreenPMAS
+        };
+        {
+            img: rsz_igm_data;
+            info: "Info. Permisos";
+            data: "Información general de la Base de Datos";
+            target: DataScreenPMAS
+        };
+        {
+            img: rsz_img_agents;
+            info: "Agentes";
+            data: "Agentes disponibles y sus asignaciones";
+            target: AgentsScreenPMAS
+        };
+        {
+            img: rsz_settings;
+            info: "Configuración";
+            data: "Opciones de configuración y cambio de contraseña";
+            target: SettingsScreenPMAS
+        }
+    );;
+    
+/* --------------------------------------------- */
+/* Retrieve the list of agents in charge*/
+/* --------------------------------------------- */
+ClearCollect(
+        collectAgentsToAdmin;
+        Distinct(
+            Filter(
+                pmas_manager_to_agents;
+                managers_id = _currentIdUser
+            );
+            agents_id
+        )
+    );;
+    
+/* --------------------------------------------- */
+/* Retrieve all data from their agents */
+/* --------------------------------------------- */
+ClearCollect(
+        agentsAvailablesToAdmin;
+        {}
+    );;
+    ForAll(
+        collectAgentsToAdmin;
+        Collect(
+            agentsAvailablesToAdmin;
+            {
+                agent_id: collectAgentsToAdmin[@Value];
+                agent_name: LookUp(
+                    pmas_agents;
+                    id_agent = collectAgentsToAdmin[@Value]
+                ).name_usr;
+                agent_rol: LookUp(
+                    pmas_agents;
+                    id_agent = collectAgentsToAdmin[@Value]
+                ).position_usr;
+                agent_email: LookUp(
+                    pmas_agents;
+                    id_agent = collectAgentsToAdmin[@Value]
+                ).email_user;
+                agent_dept: LookUp(
+                    pmas_agents;
+                    id_agent = collectAgentsToAdmin[@Value]
+                ).id_dept
+            }
+        )
+    );;
+    UpdateContext({_alphaLoading: 60%});;
+    
+/* --------------------------------------------- */
+/* Retrieve all permits related to agents */
+/* --------------------------------------------- */
+ClearCollect(
+        permitsByAgents;
+        {}
+    );;
+    ForAll(
+        agentsAvailablesToAdmin;
+        Collect(
+            permitsByAgents;
+            Filter(
+                pmas_agent_to_permits;
+                id_agent = agentsAvailablesToAdmin[@agent_id]
+            )
+        )
+    );;
+    ClearCollect(
+        permitsInfoByAgents;
+        {}
+    );;
+    ForAll(
+        permitsByAgents;
+        Collect(
+            permitsInfoByAgents;
+            Filter(
+                pmas_permits;
+                id_permit = permitsByAgents[@id_permit]
+            )
+        )
+    );;
+    UpdateContext({_alphaLoading: 40%});;
+    
+/* --------------------------------------------- */
+/* Retrieve all assigments related to agents */
+/* --------------------------------------------- */
+ClearCollect(
+        assigmentsByAgents;
+        {}
+    );;
+    ForAll(
+        agentsAvailablesToAdmin;
+        Collect(
+            assigmentsByAgents;
+            Filter(
+                pmas_trans_to_agents;
+                id_agent = agentsAvailablesToAdmin[@agent_id]
+            )
+        )
+    );;
+    
+/* --------------------------------------------- */
+/* Retrieve  all updates without approval */
+/* --------------------------------------------- */
+ClearCollect(
+        assigmentsAvailables;
+        AddColumns(
+            pmas_transact_updates;
+            "id_approval";
+            "";
+            "id_permit";
+            ""
+        )
+    );;
+    UpdateIf(
+        assigmentsAvailables;
+        id_trans = assigmentsAvailables[@id_trans];
+        {
+            id_approval: LookUp(
+                pmas_transact_approvals;
+                id_trans = assigmentsAvailables[@id_trans]
+            ).id_approvals;
+            id_permit: LookUp(
+                pmas_transactions;
+                idTransaction = Text(assigmentsAvailables[@id_trans])
+            ).id_permit_transaction
+        }
+    );;
+    UpdateContext({_alphaLoading: 10%});;
+    ;
+    "Agent";
+    Set(
+        _currentUserRol;
+        _currentEmailUserApp.pmas_user_rol
+    );;
+    ClearCollect(
+        collectMenuItems;
+        {
+            img: rsz_img_reports;
+            info: "Nueva Actualización";
+            data: "Genere una actualización para permisos o tareas previamente asignadas";
+            target: UpdatesScreenPMAS
+        };
+        {
+            img: rsz_img_tasks;
+            info: "Permisos Pendientes";
+            data: "Permisos pendientes de dar seguimiento o que requieren actualización";
+            target: UpdatesScreenPMAS
+        };
+        {
+            img: rsz_img_conditions;
+            info: "Asignaciones Pendientes";
+            data: "Asignaciones por parte del coordinador y tareas especificas";
+            target: AssigmentsScreenPMAS
+        };
+        {
+            img: rsz_igm_data;
+            info: "Data";
+            data: "Información general de la Base de Datos para consulta";
+            target: DataScreenPMAS
+        };
+        {
+            img: rsz_settings;
+            info: "Configuración";
+            data: "Opciones de configuración y cambio de contraseña";
+            target: SettingsScreenPMAS
+        }
+    );
+    "DBA";
+    Set(
+        _currentUserRol;
+        _currentEmailUserApp.pmas_user_rol
+    )
+);;
+UpdateContext({_alphaLoading: 0%});;
+UpdateContext({_isLoadingItemsAgent: false});;
