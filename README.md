@@ -194,3 +194,44 @@ ClearCollect(
    )
 );;
 ```
+
+# Validate if a record is inside a table and if not add new one
+```yaml
+Collect(
+    CollectAgentOfSelectedPermit;
+    {
+        agent_id: LookUp(
+            pmas_agents;
+            email_user = "" & ThisItem.pmas_user_email
+        ).id_agent;
+        agent_name: LookUp(
+            pmas_agents;
+            email_user = "" & ThisItem.pmas_user_email
+        ).name_usr;
+        agent_rol: ThisItem.pmas_user_rol;
+        agent_email: ThisItem.pmas_user_email
+    }
+);;
+```
+```yaml
+If(
+    GalleryAgentsAddition.AllItemsCount > 0;
+    ForAll(
+        Filter(CollectAgentOfSelectedPermit;!IsBlank(agent_name));
+        If(
+               IsBlank( LookUp(
+                    pmas_agent_to_permits;
+                    id_permit = _currentTempPermitToAssignExist && id_agent = agent_id
+                ));
+            Patch(
+                pmas_agent_to_permits;
+                Defaults(pmas_agent_to_permits);
+                {
+                    id_permit: _currentTempPermitToAssignExist;
+                    id_agent: agent_id//ThisRecord.agent_id
+                }
+            )
+        )
+    )
+);;
+```
